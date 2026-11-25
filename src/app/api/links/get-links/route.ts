@@ -6,12 +6,22 @@ import { userModel } from "@/models/user.model";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
+const PAGE_SIZE = 10;
+
+// Escape regex metacharacters so a user's search string is matched literally
+// (prevents regex injection / catastrophic backtracking against the DB).
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export async function GET(request: NextRequest) {
   await dbConnection();
   try {
     
     const token = await verifyToken(request)
-    const page = parseInt(request.nextUrl.searchParams.get("page") ?? "1", 10);
+    // Clamp to a valid 1-based page; a missing/NaN/negative value falls back to 1.
+    const parsedPage = parseInt(request.nextUrl.searchParams.get("page") ?? "1", 10);
+    const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
     const filter = request.nextUrl.searchParams.get("filter") // search filter
     if (!token) {
       return NextResponse.json({ message: "Invalid token" }, { status: 401 });
@@ -30,9 +40,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (filter) {
+      const safeFilter = escapeRegex(filter);
       matchCondition["$or"] = [
-        { title: { $regex: filter, $options: "i" } },
-        { tags: { $regex: filter, $options: "i" } },
+        { title: { $regex: safeFilter, $options: "i" } },
+        { tags: { $regex: safeFilter, $options: "i" } },
       ];
     }
 
@@ -40,8 +51,8 @@ export async function GET(request: NextRequest) {
       { $match: matchCondition},
       // ned to add serch filetr
       { $sort: { createdAt: -1 } },
-      { $skip: (page - 1) * 10 },
-      { $limit: 10 },
+      { $skip: (page - 1) * PAGE_SIZE },
+      { $limit: PAGE_SIZE },
       {
         $project: {
           _id: 1,
