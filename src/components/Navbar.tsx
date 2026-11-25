@@ -14,10 +14,14 @@ const Navbar = () => {
   const dispatch = useDispatch();
 
   const handleLogout = async () => {
-    const res = await axios.get('/api/logout');
-    if (res.data.success) {
-      router.push('/');
+    try {
+      await axios.get('/api/logout');
+    } catch {
+      // Ignore network/server errors: still clear client state below so the
+      // user isn't left stuck in a "logged in" UI.
+    } finally {
       dispatch(setAuthenticated(false));
+      router.push('/');
     }
   };
 

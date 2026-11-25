@@ -33,7 +33,7 @@ const GetLinksPage = () => {
       setError(null);
       try {
         const response = await axios.get(
-          `/api/links/get-links?page=${page}&filter=${debouncedSearch}`
+          `/api/links/get-links?page=${page}&filter=${encodeURIComponent(debouncedSearch)}`
         );
         setLinks(response.data.data);
       } catch {

@@ -7,7 +7,7 @@ export const usernameValidation = z.string()
 export const signupValidation = z.object({
     username : usernameValidation,
     email: z.string().email({message:"Invalid email adress"}),
-    password: z.string().min(5,{message:"Password must be atleast 5 charaters long"})
+    password: z.string().min(8,{message:"Password must be at least 8 characters long"})
 })
 
 export type UserInput = z.infer<typeof signupValidation>;

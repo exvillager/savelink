@@ -1,16 +1,10 @@
-import { verify } from 'jsonwebtoken';
+import { verifyToken } from '@/lib/authJWT';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
-  const token =  request.cookies.get('token')?.value ?? "";
-  if (!token) {
-    return NextResponse.json({ isAuthenticated: false, success:false });
-  }
-
-  try {
-    verify(token, process.env.JWT_TOKEN_SECRET!);
-    return NextResponse.json({ isAuthenticated: true, success:true });
-  } catch (error) {
-   return NextResponse.json({ isAuthenticated: false, success:false });
-  }
+  // Reuse the shared jose-based verifier so auth logic lives in one place
+  // (instead of a second, jsonwebtoken-based implementation here).
+  const decoded = await verifyToken(request);
+  const isAuthenticated = decoded !== null;
+  return NextResponse.json({ isAuthenticated, success: isAuthenticated });
 }
